@@ -1,0 +1,135 @@
+<?php
+
+function table_has_column(string $table, string $column): bool
+{
+    $db = db();
+    $result = $db->query('SHOW COLUMNS FROM `' . $db->real_escape_string($table) . '` LIKE \'' . $db->real_escape_string($column) . '\'');
+
+    return $result instanceof mysqli_result && $result->num_rows > 0;
+}
+
+function ensure_app_schema(): void
+{
+    $db = db();
+
+    $db->query("
+        CREATE TABLE IF NOT EXISTS sites (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(190) NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    $db->query("
+        CREATE TABLE IF NOT EXISTS users (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(190) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            role ENUM('system_admin', 'client_admin', 'client_user') NOT NULL,
+            site_id INT UNSIGNED NULL,
+            active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_users_site (site_id),
+            CONSTRAINT fk_users_site FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    if (! table_has_column('users', 'site_id')) {
+        $db->query('ALTER TABLE users ENGINE=InnoDB');
+        $db->query('ALTER TABLE users ADD COLUMN site_id INT UNSIGNED NULL AFTER role');
+        $db->query('ALTER TABLE users ADD KEY idx_users_site (site_id)');
+        $db->query('ALTER TABLE users ADD CONSTRAINT fk_users_site FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE SET NULL');
+    }
+
+    if (! table_has_column('users', 'active')) {
+        $db->query('ALTER TABLE users ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1 AFTER site_id');
+    }
+
+    $db->query("
+        CREATE TABLE IF NOT EXISTS machines (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            vehicle_id VARCHAR(64) NOT NULL,
+            name VARCHAR(190) NOT NULL DEFAULT '',
+            device_model VARCHAR(100) NOT NULL DEFAULT '',
+            connected TINYINT(1) NOT NULL DEFAULT 0,
+            last_log DATETIME NULL,
+            vehicle_type VARCHAR(100) NOT NULL DEFAULT '',
+            site_id INT UNSIGNED NULL,
+            device_uid VARCHAR(190) NOT NULL DEFAULT '',
+            status VARCHAR(100) NOT NULL DEFAULT '',
+            v_computer VARCHAR(50) NOT NULL DEFAULT '',
+            v_daemon VARCHAR(50) NOT NULL DEFAULT '',
+            source ENUM('export', 'manual') NOT NULL DEFAULT 'export',
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_vehicle (vehicle_id),
+            KEY idx_site (site_id),
+            CONSTRAINT fk_machines_site FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    if (! table_has_column('machines', 'source')) {
+        $db->query("ALTER TABLE machines ADD COLUMN source ENUM('export', 'manual') NOT NULL DEFAULT 'export' AFTER v_daemon");
+    }
+
+    $db->query("
+        CREATE TABLE IF NOT EXISTS ingest_batches (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            drive_file_id VARCHAR(128) NOT NULL,
+            file_name VARCHAR(255) NOT NULL,
+            file_modified VARCHAR(40) NOT NULL DEFAULT '',
+            row_count INT UNSIGNED NOT NULL DEFAULT 0,
+            site_count INT UNSIGNED NOT NULL DEFAULT 0,
+            ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ingested_by INT UNSIGNED NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    $db->query("
+        CREATE TABLE IF NOT EXISTS ingest_poll_runs (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            ran_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            status VARCHAR(40) NOT NULL,
+            message VARCHAR(500) NOT NULL DEFAULT '',
+            file_name VARCHAR(255) NOT NULL DEFAULT ''
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    $db->query("
+        CREATE TABLE IF NOT EXISTS machine_types (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            slug VARCHAR(120) NOT NULL,
+            source ENUM('export', 'manual') NOT NULL DEFAULT 'manual',
+            photo_file VARCHAR(255) NOT NULL DEFAULT '',
+            icon_file VARCHAR(255) NOT NULL DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_machine_types_name (name),
+            UNIQUE KEY uq_machine_types_slug (slug)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    $db->query("
+        CREATE TABLE IF NOT EXISTS contact_messages (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(120) NOT NULL,
+            email VARCHAR(190) NOT NULL,
+            phone VARCHAR(40) NOT NULL DEFAULT '',
+            subject VARCHAR(190) NOT NULL DEFAULT '',
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_contact_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    $db->query("
+        CREATE TABLE IF NOT EXISTS gallery_images (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            file_name VARCHAR(255) NOT NULL DEFAULT '',
+            original_name VARCHAR(190) NOT NULL DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_gallery_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+}

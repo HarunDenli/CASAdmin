@@ -1,0 +1,9 @@
+﻿INSERT INTO gallery_images (file_name, original_name, created_at) VALUES ('gallery-1.jpg', 'gallery1.jpg', '2026-10-16 08:43:41');
+INSERT INTO gallery_images (file_name, original_name, created_at) VALUES ('gallery-2.jpg', 'gallery2.jpg', '2026-10-16 08:43:59');
+INSERT INTO gallery_images (file_name, original_name, created_at) VALUES ('gallery-3.jpg', 'gallery3.jpg', '2026-10-16 08:44:02');
+INSERT INTO gallery_images (file_name, original_name, created_at) VALUES ('gallery-4.jpg', 'gallery4.jpg', '2026-10-16 08:44:13');
+INSERT INTO gallery_images (file_name, original_name, created_at) VALUES ('gallery-5.jpg', 'gallery5.jpg', '2026-10-16 08:44:16');
+INSERT INTO gallery_images (file_name, original_name, created_at) VALUES ('gallery-6.jpg', 'gallery6.jpg', '2026-10-16 08:44:21');
+INSERT INTO gallery_images (file_name, original_name, created_at) VALUES ('gallery-7.jpg', 'gallery7.jpg', '2026-10-16 08:44:25');
+INSERT INTO gallery_images (file_name, original_name, created_at) VALUES ('gallery-8.jpg', 'gallery8.jpg', '2026-10-16 08:44:28');
+INSERT INTO gallery_images (file_name, original_name, created_at) VALUES ('gallery-9.jpg', 'gallery9.jpg', '2026-10-16 08:44:30');
